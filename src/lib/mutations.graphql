@@ -1,0 +1,62 @@
+import { gql } from '@apollo/client';
+
+export const GET_CHAT_BY_ID = gql`
+  query GetChatById($chatId: uuid!) {
+    chats_by_pk(id: $chatId) {
+      id
+      title
+      is_public
+      share_token
+      created_at
+      updated_at
+      last_message_at
+      message_count
+      messages {
+        id
+        content
+        isBot
+        timestamp
+        message_type
+        created_at
+      }
+    }
+  }
+`;
+
+export const SEND_MESSAGE = gql`
+  mutation SendMessage($chatId: uuid!, $content: String!, $messageType: String!) {
+    insert_messages_one(object: {
+      chat_id: $chatId
+      content: $content
+      message_type: $messageType
+      isBot: false
+      timestamp: "now()"
+    }) {
+      id
+      content
+      isBot
+      timestamp
+      message_type
+      created_at
+    }
+  }
+`;
+
+export const INSERT_BOT_MESSAGE = gql`
+  mutation InsertBotMessage($chatId: uuid!, $content: String!, $messageType: String!) {
+    insert_messages_one(object: {
+      chat_id: $chatId
+      content: $content
+      message_type: $messageType
+      isBot: true
+      timestamp: "now()"
+    }) {
+      id
+      content
+      isBot
+      timestamp
+      message_type
+      created_at
+    }
+  }
+`;
