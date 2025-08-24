@@ -50,11 +50,12 @@ const GET_CHAT_WITH_MESSAGES = gql`
 `;
 
 const CREATE_CHAT = gql`
-  mutation CreateChat($title: String!, $isPublic: Boolean = false, $shareToken: String) {
+  mutation CreateChat($title: String!, $isPublic: Boolean = false, $shareToken: String, $userId: uuid!) {
     insert_chats_one(object: {
       title: $title
       is_public: $isPublic
       share_token: $shareToken
+      user_id: $userId  // Explicitly set the user_id
     }) {
       id
       title
@@ -679,22 +680,77 @@ function ChatInterface({
   });
 
   // Convert Hasura data to local format
-  const chats = chatsData?.chats?.map((chat: Chat) => ({
-    id: chat.id,
-    title: chat.title || 'New Chat',
-    message_count: chat.message_count || 0,
-    updated_at: chat.updated_at,
-    created_at: chat.created_at,
-    is_public: chat.is_public,
-    share_token: chat.share_token,
-  })) || [];
+  // Convert Hasura data to local format
+const chats = chatsData?.chats?.map((chat: any) => ({
+  id: chat.id,
+  title: chat.title || 'New Chat',
+  message_count: chat.message_count || 0,
+  updated_at: chat.updated_at,
+  created_at: chat.created_at,
+  is_public: chat.is_public,
+  share_token: chat.share_token,
+})) || [];
 
-  const currentChatMessages = chatData?.chats_by_pk?.messages?.map((msg: { id: string; title: string; description: string; message_count: number; created_at: string }) => ({
-    id: msg.id,
-    content: msg.description || msg.title || '',
-    isBot: msg.message_count % 2 === 0, // Even numbers are bot messages
-    timestamp: msg.created_at,
-  })) || [];
+// 👇 ADD THIS ENTIRE useEffect CODE HERE 👇
+// Auto-create welcome chat or select existing chat
+useEffect(() => {
+  if (chatsLoading || chatsError || selectedChatId) return;
+
+  const handleDefaultChat = async () => {
+    if (chatsData?.chats?.length === 0) {
+      // New user - create welcome chat
+      console.log('🎉 Creating welcome chat for new user...');
+      
+      try {
+        const result = await createChatMutation({
+          variables: {
+            title: `Welcome to Subspace AI`,
+            isPublic: false,
+            shareToken: null,
+          },
+        });
+
+        if (result.data?.insert_chats_one) {
+          const welcomeChat = result.data.insert_chats_one;
+          setSelectedChatId(welcomeChat.id);
+          
+          // Add welcome message after a short delay
+          setTimeout(async () => {
+            const welcomeMessage = `Hello! 👋 Welcome to Subspace AI!\n\nI'm your intelligent conversation partner. What would you like to explore today?`;
+            
+            await createMessageMutation({
+              variables: {
+                chatId: welcomeChat.id,
+                title: "Welcome Message",
+                description: welcomeMessage,
+                messageCount: 1,
+              },
+            });
+            
+            refetchChats();
+          }, 1000);
+        }
+      } catch (error) {
+        console.error('Error creating welcome chat:', error);
+      }
+    } else if (chatsData?.chats?.length > 0) {
+      // Returning user - select most recent chat
+      const mostRecentChat = chatsData.chats[0]; // Already sorted by updated_at desc
+      setSelectedChatId(mostRecentChat.id);
+      console.log('🎯 Auto-selected most recent chat:', mostRecentChat.title);
+    }
+  };
+
+  handleDefaultChat();
+}, [chatsLoading, chatsError, chatsData, selectedChatId, user?.id, createChatMutation, createMessageMutation, refetchChats]);
+// 👆 END OF ADDED CODE 👆
+
+const currentChatMessages = chatData?.chats_by_pk?.messages?.map((msg: any) => ({
+  id: msg.id,
+  content: msg.description || msg.title || '',
+  isBot: msg.message_count % 2 === 0,
+  timestamp: msg.created_at,
+})) || [];
 
   // Combined messages (from DB + local typing)
   const displayMessages = [...currentChatMessages, ...localMessages];
@@ -827,6 +883,7 @@ const generateBotResponse = async (userMessage: string, chatHistory?: ChatMessag
           title: `New Chat ${new Date().toLocaleTimeString()}`,
           isPublic: false,
           shareToken: null,
+          userId: user.id, // Add the user ID from the authenticated user
         },
       });
       

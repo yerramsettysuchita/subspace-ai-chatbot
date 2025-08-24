@@ -1,6 +1,7 @@
 // ============= src/hooks/useChat.ts =============
 import { useState, useCallback } from 'react'
 import { useMutation, useQuery } from '@apollo/client'
+import { useUserData } from '@nhost/react'
 import { CREATE_CHAT, UPDATE_CHAT, DELETE_CHAT } from '../lib/mutations'
 import { GET_USER_CHATS } from '../lib/queries'
 import { showToast } from '../components/UI/Toast'
@@ -10,10 +11,12 @@ import { generateChatTitle } from '../utils/formatters'
 export const useChat = () => {
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null)
   
+  const user = useUserData()
   const { data, loading, refetch } = useQuery(GET_USER_CHATS, {
     variables: {
-      userId: (window as Window & typeof globalThis & { userId?: string }).userId // TODO: Get user ID from proper auth context
-    }
+      userId: user?.id
+    },
+    skip: !user?.id
   })
   const [createChatMutation, { loading: creating }] = useMutation(CREATE_CHAT)
   const [updateChatMutation, { loading: updating }] = useMutation(UPDATE_CHAT)
@@ -25,9 +28,16 @@ export const useChat = () => {
     try {
       const title = data?.title || `New Chat ${new Date().toLocaleTimeString()}`
       
+      if (!user?.id) {
+        showToast.error('You must be logged in to create a chat')
+        return null
+      }
+      
       const result = await createChatMutation({
         variables: {
-          title
+          title,
+          userId: user.id,
+          isPublic: false
         }
       })
       
