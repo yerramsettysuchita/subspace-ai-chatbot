@@ -1,7 +1,7 @@
 // ============= src/components/Chat/MessageBubble.tsx =============
 import React from 'react'
 import { motion } from 'framer-motion'
-import ReactMarkdown from 'react-markdown'
+import ReactMarkdown, { Components } from 'react-markdown'
 import { 
   ClipboardIcon, 
   CheckIcon,
@@ -82,23 +82,13 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, index }) => {
           <div className="prose prose-sm max-w-none dark:prose-invert">
             <ReactMarkdown
               components={{
-                code: {
-                  // @ts-ignore - ReactMarkdown types are not fully compatible
-                  component: ({
-                    inline,
-                    children,
-                    ...props
-                  }: {
-                    inline?: boolean;
-                    children: React.ReactNode;
-                    [key: string]: unknown;
-                  }) => {
+                code: ({ inline, children, className, ...props }: any) => {
                   if (!inline) {
                     // Block code
                     return (
                       <div className="relative">
                         <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto text-sm my-4">
-                          <code {...props}>{children}</code>
+                          <code className={className} {...props}>{children}</code>
                         </pre>
                         <button
                           onClick={() => handleCopy(String(children))}
@@ -113,7 +103,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, index }) => {
                     // Inline code
                     return (
                       <code 
-                        className="bg-gray-100 dark:bg-dark-600 px-1.5 py-0.5 rounded text-sm font-mono" 
+                        className={`bg-gray-100 dark:bg-dark-600 px-1.5 py-0.5 rounded text-sm font-mono ${className || ''}`}
                         {...props}
                       >
                         {children}
@@ -121,24 +111,22 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, index }) => {
                     )
                   }
                 },
-                pre: ({ children }) => <>{children}</>,
-                p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
-                ul: ({ children }) => <ul className="list-disc pl-4 mb-2">{children}</ul>,
-                ol: ({ children }) => <ol className="list-decimal pl-4 mb-2">{children}</ol>,
-                /* eslint-disable */
-                li: ({ children }) => <li className="mb-1">{children}</li>,
-                /* eslint-enable */
-                h1: ({ children }) => <h1 className="text-lg font-bold mb-2">{children}</h1>,
-                h2: ({ children }) => <h2 className="text-base font-bold mb-2">{children}</h2>,
-                h3: ({ children }) => <h3 className="text-sm font-bold mb-2">{children}</h3>,
-                strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
-                em: ({ children }) => <em className="italic">{children}</em>,
-                blockquote: ({ children }) => (
+                pre: ({ children }: { children?: React.ReactNode }) => <>{children}</>,
+                p: ({ children }: { children?: React.ReactNode }) => <p className="mb-2 last:mb-0">{children}</p>,
+                ul: ({ children }: { children?: React.ReactNode }) => <ul className="list-disc pl-4 mb-2">{children}</ul>,
+                ol: ({ children }: { children?: React.ReactNode }) => <ol className="list-decimal pl-4 mb-2">{children}</ol>,
+                li: ({ children }: { children?: React.ReactNode }) => <li className="mb-1">{children}</li>,
+                h1: ({ children }: { children?: React.ReactNode }) => <h1 className="text-lg font-bold mb-2">{children}</h1>,
+                h2: ({ children }: { children?: React.ReactNode }) => <h2 className="text-base font-bold mb-2">{children}</h2>,
+                h3: ({ children }: { children?: React.ReactNode }) => <h3 className="text-sm font-bold mb-2">{children}</h3>,
+                strong: ({ children }: { children?: React.ReactNode }) => <strong className="font-semibold">{children}</strong>,
+                em: ({ children }: { children?: React.ReactNode }) => <em className="italic">{children}</em>,
+                blockquote: ({ children }: { children?: React.ReactNode }) => (
                   <blockquote className="border-l-4 border-gray-300 dark:border-gray-600 pl-4 italic my-2">
                     {children}
                   </blockquote>
                 ),
-              }}
+              } as Components}
             >
               {message.content}
             </ReactMarkdown>

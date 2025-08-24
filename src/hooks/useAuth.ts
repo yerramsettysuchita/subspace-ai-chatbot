@@ -61,7 +61,7 @@ export const useAuth = (): AuthState => {
     checkInitialAuth();
 
     // Listen for auth state changes
-    let unsubscribe: (() => void) | null = null;
+    let unsubscribe: (() => void) | undefined;
 
     try {
       const unsub = nhost.auth.onAuthStateChanged((event, session) => {
@@ -70,7 +70,6 @@ export const useAuth = (): AuthState => {
         }
 
         const user = session?.user;
-        
         setAuthState({
           user: user ? {
             id: user.id,
@@ -83,8 +82,7 @@ export const useAuth = (): AuthState => {
           isAuthenticated: !!user,
         });
       });
-
-      unsubscribe = unsub;
+      unsubscribe = () => { unsub(); };
     } catch (error) {
       if (import.meta.env.DEV) {
         console.log('Auth listener setup failed:', error);

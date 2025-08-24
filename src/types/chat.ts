@@ -1,4 +1,3 @@
-import { ReactNode } from 'react';
 
 export interface CustomError extends Error {
   graphQLErrors?: { extensions?: { code: string } }[];
